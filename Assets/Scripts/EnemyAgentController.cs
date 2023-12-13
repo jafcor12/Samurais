@@ -11,9 +11,6 @@ public class EnemyAgentController : MonoBehaviour
     int health;
 
     [SerializeField]
-    float visionRange = 10f;
-
-    [SerializeField]
     LayerMask playerLayer;
 
     [SerializeField]
@@ -38,7 +35,6 @@ public class EnemyAgentController : MonoBehaviour
     Animator _animator;
 
     bool _hitState;
-    bool _detectPlayer = false;
 
     Collider colliderComponent;
 
