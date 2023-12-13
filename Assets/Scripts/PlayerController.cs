@@ -15,6 +15,9 @@ public class PlayerController : MonoState<PlayerController>
     GameObject aimPanel;
 
     [SerializeField]
+    int damage;
+
+    [SerializeField]
     float normalSensitivity = 1.0f;
 
     [SerializeField]
@@ -97,12 +100,10 @@ public class PlayerController : MonoState<PlayerController>
     {
         if (other.CompareTag("Enemy"))
         {
-            // Enemy hit by the sword, perform necessary actions
-            // e.g., apply damage to the enemy
             EnemyAgentController enemy = other.GetComponent<EnemyAgentController>();
             if (enemy != null)
             {
-                enemy.Die();
+                enemy.TakeDamage(damage);
             }
         }
     }

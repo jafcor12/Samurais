@@ -1,19 +1,44 @@
-using StarterAssets;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.Windows;
 
 public class EnemyAgentController : MonoBehaviour
 {
     [SerializeField]
     Transform target;
 
+    [SerializeField]
+    int health;
+
+    [SerializeField]
+    float visionRange = 10f;
+
+    [SerializeField]
+    LayerMask playerLayer;
+
+    [SerializeField]
+    public float radius;
+
+    [SerializeField]
+    [Range(0, 360)]
+    public float angle;
+
+    [SerializeField]
+    public GameObject targetPlayer;
+
+    [SerializeField]
+    LayerMask targetMask;
+
+    [SerializeField]
+    public LayerMask obstructionMask;
+
+    public bool canSeePlayer;
+
     NavMeshAgent _agent;
     Animator _animator;
 
     bool _hitState;
+    bool _detectPlayer = false;
 
     Collider colliderComponent;
 
@@ -22,21 +47,33 @@ public class EnemyAgentController : MonoBehaviour
         _agent = GetComponent<NavMeshAgent>();
         _animator = GetComponent<Animator>();
         colliderComponent = GetComponent<Collider>();
+        targetPlayer = GameObject.FindGameObjectWithTag("Player");
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (_hitState)
+        if (health <= 0)
         {
-            return;
+            Die();
+            if (_hitState)
+            {
+                return;
+            }
         }
-        _agent.SetDestination(target.position);
+
+        FieldOfViewCheck();
+
+        if (canSeePlayer)
+        {
+            _animator.SetBool("fieldOfVision", true);
+            _agent.SetDestination(target.position);
+        }
+        else
+            _animator.SetBool("fieldOfVision", false);
     }
 
-    public void Die()
+    void Die()
     {
-        // Perform death animations, play sound, or destroy the enemy GameObject
         _hitState = true;
         _animator.SetBool("EnemyHit", true);
         colliderComponent.enabled = false;
@@ -44,11 +81,39 @@ public class EnemyAgentController : MonoBehaviour
         StartCoroutine(WaitDelete());
     }
 
-    IEnumerator WaitDelete()
+    public void TakeDamage(int damage)
+    {
+        health -= damage;
+    }
+
+    private void FieldOfViewCheck()
+    {
+        Collider[] rangeChecks = Physics.OverlapSphere(transform.position, radius, targetMask);
+
+        if (rangeChecks.Length != 0)
+        {
+            Transform target = rangeChecks[0].transform;
+            Vector3 directionToTarget = (target.position - transform.position).normalized;
+
+            if (Vector3.Angle(transform.forward, directionToTarget) < angle / 2)
+            {
+                float distanceToTarget = Vector3.Distance(transform.position, target.position);
+
+                if (!Physics.Raycast(transform.position, directionToTarget, distanceToTarget, obstructionMask))
+                    canSeePlayer = true;
+                else
+                    canSeePlayer = false;
+            }
+            else
+                canSeePlayer = false;
+        }
+        else if (canSeePlayer)
+            canSeePlayer = false;
+    }
+
+IEnumerator WaitDelete()
     {
         yield return new WaitForSeconds(10f);
-
         Destroy(gameObject);
     }
 }
-
