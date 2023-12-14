@@ -1,9 +1,7 @@
-using Cinemachine;
 using StarterAssets;
+using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 public class PlayerController : MonoState<PlayerController>
 {
@@ -16,6 +14,9 @@ public class PlayerController : MonoState<PlayerController>
 
     [SerializeField]
     int damage;
+
+    [SerializeField]
+    public int health;
 
     //[SerializeField]
     //float normalSensitivity = 1.0f;
@@ -32,6 +33,7 @@ public class PlayerController : MonoState<PlayerController>
     //bool _gunState;
 
     bool _swordState;
+    bool _hitState;
 
     protected override void Awake()
     {
@@ -45,6 +47,14 @@ public class PlayerController : MonoState<PlayerController>
 
     void Update()
     {
+        if (health <= 0)
+        {
+            Die();
+            if (_hitState)
+            {
+                return;
+            }
+        }
         if (_swordState != _inputs.sword)
         {
             _swordState = _inputs.sword;
@@ -52,9 +62,26 @@ public class PlayerController : MonoState<PlayerController>
         }
     }
 
+    void Die()
+    {
+        _hitState = true;
+        _animator.SetBool("PlayerHit", true);
+
+        StartCoroutine(WaitDelete());
+    }
+
     public CharacterController GetcharacterController()
     {
         return _characterController;
+    }
+
+    public bool HandleDamage(int damage)
+    {
+        health -= damage;
+        if (health <= 0)
+            return false;
+        else
+            return true;
     }
 
     void OnTriggerEnter(Collider other)
@@ -69,5 +96,10 @@ public class PlayerController : MonoState<PlayerController>
         }
     }
 
-
+    IEnumerator WaitDelete()
+    {
+        yield return new WaitForSeconds(5f);
+        Destroy(gameObject);
+    }
 }
+

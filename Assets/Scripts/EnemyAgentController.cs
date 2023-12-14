@@ -11,6 +11,12 @@ public class EnemyAgentController : MonoBehaviour
     int health;
 
     [SerializeField]
+    float detectionRange = 5f;
+
+    [SerializeField]
+    int damage;
+
+    [SerializeField]
     LayerMask playerLayer;
 
     [SerializeField]
@@ -35,6 +41,7 @@ public class EnemyAgentController : MonoBehaviour
     Animator _animator;
 
     bool _hitState;
+    bool isAlive = true;
 
     Collider colliderComponent;
 
@@ -57,6 +64,7 @@ public class EnemyAgentController : MonoBehaviour
             }
         }
 
+        AttackDistance();
         FieldOfViewCheck();
 
         if (canSeePlayer)
@@ -85,31 +93,58 @@ public class EnemyAgentController : MonoBehaviour
     private void FieldOfViewCheck()
     {
         Collider[] rangeChecks = Physics.OverlapSphere(transform.position, radius, targetMask);
-
-        if (rangeChecks.Length != 0)
+        if (isAlive && rangeChecks.Length != 0)
         {
             Transform target = rangeChecks[0].transform;
             Vector3 directionToTarget = (target.position - transform.position).normalized;
-
             if (Vector3.Angle(transform.forward, directionToTarget) < angle / 2)
             {
                 float distanceToTarget = Vector3.Distance(transform.position, target.position);
-
                 if (!Physics.Raycast(transform.position, directionToTarget, distanceToTarget, obstructionMask))
+                {
                     canSeePlayer = true;
-                else
-                    canSeePlayer = false;
+                    return;
+                }
             }
-            else
-                canSeePlayer = false;
         }
-        else if (canSeePlayer)
-            canSeePlayer = false;
+        canSeePlayer = false;
+
     }
 
-IEnumerator WaitDelete()
+    private void AttackDistance()
     {
-        yield return new WaitForSeconds(10f);
+        float distanceToPlayer = Vector3.Distance(transform.position, target.position);
+        if (isAlive && distanceToPlayer <= detectionRange)
+        {
+            _animator.SetBool("enemyAttack", true);
+
+            AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
+            if (!stateInfo.IsName("enemyAttack") && stateInfo.normalizedTime < 1.0f)
+            {
+                _animator.SetBool("enemyAttack", false);
+            }
+            return;
+        }
+
+        _animator.SetBool("enemyAttack", false);
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        PlayerController player = other.GetComponent<PlayerController>();
+        if (other.CompareTag("Player"))
+        {
+            if (player != null)
+            {
+                isAlive = player.HandleDamage(damage);
+            }
+        }
+    }
+
+    IEnumerator WaitDelete()
+    {
+        yield return new WaitForSeconds(0.5f);
         Destroy(gameObject);
     }
 }
+
